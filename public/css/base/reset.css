@@ -7,13 +7,23 @@
     box-sizing: border-box;
 }
 
-html,
-body {
+html {
     width: 100%;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    /* overflow-y: scroll; Optional: force scrollbar to prevent layout shift, but user wants 'just one scroll' */
+}
+
+body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
     position: relative;
+    overflow-x: hidden;
+    /* Ensure body also doesn't spill horizontally */
+    overflow-y: visible;
+    /* FORCE visible so body never generates a specific scrollbar */
 }
 
 body {

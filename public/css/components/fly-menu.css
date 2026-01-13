@@ -146,8 +146,8 @@
     flex-direction: column;
     box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
 
-    /* NEW: Enables scrolling inside the menu */
-    overflow-y: auto;
+    /* NEW: Enables scrolling inside the menu ONLY when active */
+    overflow-y: hidden;
     /* NEW: Makes scrolling smooth on iPhones */
     -webkit-overflow-scrolling: touch;
 }
@@ -158,6 +158,8 @@
     visibility: visible;
     pointer-events: auto;
     /* NEW: Enable interaction when open */
+    overflow-y: auto;
+    /* NEW: Scrollbar only appears when menu is open */
     transition: right 0.6s cubic-bezier(0.77, 0, 0.175, 1), visibility 0s linear 0s;
 }
 
