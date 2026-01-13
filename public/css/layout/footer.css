@@ -35,3 +35,15 @@
 .social-icon:hover svg {
     fill: var(--color-accent);
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .site-footer {
+        padding: 40px 6%;
+    }
+
+    .footer-links {
+        flex-direction: column;
+        gap: 15px;
+    }
+}
