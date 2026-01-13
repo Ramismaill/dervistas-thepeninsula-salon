@@ -122,6 +122,8 @@
 #about {
     position: relative;
     padding: 100px 8%;
+    overflow: hidden;
+    /* Clip the 200% width waves */
     /* No background color here to let blobs show, or semi-transparent */
 }
 
