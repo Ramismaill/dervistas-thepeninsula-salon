@@ -20,6 +20,8 @@
     animation: oceanWave 15s linear infinite;
     pointer-events: none;
     z-index: 0;
+    transform: translateX(0);
+    will-change: transform;
 }
 
 #gallery::after {
@@ -36,6 +38,8 @@
     animation: oceanWave 18s linear infinite reverse;
     pointer-events: none;
     z-index: 0;
+    transform: translateX(0);
+    will-change: transform;
 }
 
 #gallery>* {
