@@ -15,7 +15,6 @@ const PORT = process.env.PORT || 3000;
 const dbPath = path.join(process.cwd(), 'database.sqlite');
 
 // Initialize database if it doesn't exist
-const fs = require('fs');
 if (!fs.existsSync(dbPath)) {
     console.log('Database not found. Initializing...');
     require('./scripts/init_db.js');
@@ -87,10 +86,15 @@ app.get('/api/services', (req, res) => {
 });
 
 // ROUTE B: Create Booking
-app.post('/api/book', (req, res) => {
+app.post('/api/book', async (req, res) => {
     const { guest_type, full_name, email, room_number, phone_number, appointment_date, appointment_time, services, total_price_euro } = req.body;
 
     try {
+        // Validate required fields
+        if (!full_name || !email || !appointment_date || !appointment_time || !services) {
+            return res.status(400).json({ error: 'Missing required fields.' });
+        }
+
         // 1. Insert into Database
         const insertStmt = db.prepare(`
             INSERT INTO appointments 
@@ -100,38 +104,42 @@ app.post('/api/book', (req, res) => {
         const result = insertStmt.run(guest_type, full_name, email, room_number, phone_number, appointment_date, appointment_time, services, total_price_euro);
         const appointmentId = result.lastInsertRowid;
 
-        // 2. Send Email to Salon Owner (You)
-        const confirmLink = `http://localhost:3000/api/admin/confirm-appointment?id=${appointmentId}`;
+        // Get the protocol and host from the request for confirm link
+        const protocol = req.protocol || 'https';
+        const host = req.get('host') || 'localhost:3000';
+        const confirmLink = `${protocol}://${host}/api/admin/confirm-appointment?id=${appointmentId}`;
 
+        // 2. Send Email to Salon Owner
         const mailOptions = {
             from: process.env.EMAIL_USER,
-            to: process.env.EMAIL_USER,
+            to: 'ramismail701@gmail.com',
             subject: `NEW BOOKING: ${full_name}`,
             html: `
                 <h3>New Appointment Request</h3>
                 <p><strong>Name:</strong> ${full_name}</p>
+                <p><strong>Email:</strong> ${email}</p>
                 <p><strong>Date:</strong> ${appointment_date} @ ${appointment_time}</p>
                 <p><strong>Services:</strong> ${services}</p>
                 <p><strong>Total:</strong> €${total_price_euro}</p>
-                <p><strong>Contact:</strong> ${room_number ? 'Room ' + room_number : phone_number}</p>
+                <p><strong>Contact:</strong> ${room_number ? 'Room ' + room_number : 'Phone: ' + phone_number}</p>
                 <br>
-                <a href="${confirmLink}" style="background:green; color:white; padding:10px 20px; text-decoration:none;">ACCEPT & CONFIRM</a>
+                <a href="${confirmLink}" style="background:green; color:white; padding:10px 20px; text-decoration:none; border-radius: 5px;">ACCEPT & CONFIRM</a>
             `
         };
 
-        transporter.sendMail(mailOptions)
-            .then(() => {
-                res.json({ success: true, message: 'Request sent successfully.' });
-            })
-            .catch((emailErr) => {
-                console.error("Email Error:", emailErr);
-                // Still return success since booking was saved
-                res.json({ success: true, message: 'Booking saved. Email notification failed.' });
-            });
+        try {
+            await transporter.sendMail(mailOptions);
+            console.log(`Booking email sent to ramismail701@gmail.com for ${full_name}`);
+            return res.json({ success: true, message: 'Appointment request sent successfully.' });
+        } catch (emailErr) {
+            console.error("Email Error:", emailErr);
+            // Still return success since booking was saved
+            return res.json({ success: true, message: 'Booking saved. Email notification failed.' });
+        }
 
     } catch (err) {
         console.error("Booking Error:", err);
-        res.status(500).json({ error: 'Database error.' });
+        return res.status(500).json({ error: 'Database error: ' + err.message });
     }
 });
 

@@ -218,6 +218,30 @@ async function handleBookingSubmit(e) {
         return;
     }
 
+    // Validate form fields
+    const fullName = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const datePicker = document.getElementById('datePicker').value;
+    const timeSlot = document.getElementById('timeSlot').value;
+    const isGuest = document.querySelector('input[name="isGuest"]:checked');
+    const roomNumber = document.getElementById('roomNumber').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+
+    if (!fullName || !email || !datePicker || !timeSlot || !isGuest) {
+        alert("Please fill in all required fields.");
+        return;
+    }
+
+    if (isGuest.value === 'yes' && !roomNumber) {
+        alert("Please enter your room number.");
+        return;
+    }
+
+    if (isGuest.value === 'no' && !phone) {
+        alert("Please enter your phone number.");
+        return;
+    }
+
     // Calculate total price
     let totalPrice = 0;
     selectedServices.forEach(service => {
@@ -226,13 +250,13 @@ async function handleBookingSubmit(e) {
     });
 
     const formData = {
-        guest_type: document.querySelector('input[name="isGuest"]:checked').value === 'yes' ? 'hotel_guest' : 'external',
-        full_name: document.getElementById('fullName').value,
-        email: document.getElementById('email').value,
-        room_number: document.getElementById('roomNumber').value || 'N/A',
-        phone_number: document.getElementById('phone').value,
-        appointment_date: document.getElementById('datePicker').value,
-        appointment_time: document.getElementById('timeSlot').value,
+        guest_type: isGuest.value === 'yes' ? 'hotel_guest' : 'external',
+        full_name: fullName,
+        email: email,
+        room_number: isGuest.value === 'yes' ? roomNumber : 'N/A',
+        phone_number: isGuest.value === 'no' ? phone : 'N/A',
+        appointment_date: datePicker,
+        appointment_time: timeSlot,
         services: selectedServices.map(s => s.value).join(', '),
         total_price_euro: totalPrice
     };
@@ -245,16 +269,22 @@ async function handleBookingSubmit(e) {
             body: JSON.stringify(formData)
         });
 
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Server error:", errorText);
+            alert("Error: Server responded with status " + response.status);
+            return;
+        }
+
         const result = await response.json();
         
-        if (response.ok || result.success) {
+        if (result.success) {
             // Show confirmation modal
             showConfirmationModal();
         } else {
             alert("Error: " + (result.error || result.message || "Unknown error"));
         }
     } catch (err) {
-        // Even if backend fails, show confirmation modal (request was made)
         console.error("Error:", err);
         alert("Error submitting booking: " + err.message);
     }
