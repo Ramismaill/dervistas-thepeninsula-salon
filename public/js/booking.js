@@ -212,11 +212,18 @@ async function handleBookingSubmit(e) {
     e.preventDefault();
     
     // Validation: At least one service
-    const selectedServices = Array.from(document.querySelectorAll('input[name="services"]:checked')).map(cb => cb.value);
+    const selectedServices = Array.from(document.querySelectorAll('input[name="services"]:checked'));
     if (selectedServices.length === 0) {
         alert("Please select at least one service.");
         return;
     }
+
+    // Calculate total price
+    let totalPrice = 0;
+    selectedServices.forEach(service => {
+        const price = parseFloat(service.getAttribute('data-price')) || 0;
+        totalPrice += price;
+    });
 
     const formData = {
         guest_type: document.querySelector('input[name="isGuest"]:checked').value === 'yes' ? 'hotel_guest' : 'external',
@@ -226,7 +233,8 @@ async function handleBookingSubmit(e) {
         phone_number: document.getElementById('phone').value,
         appointment_date: document.getElementById('datePicker').value,
         appointment_time: document.getElementById('timeSlot').value,
-        services: selectedServices.join(', ')
+        services: selectedServices.map(s => s.value).join(', '),
+        total_price_euro: totalPrice
     };
 
     try {
@@ -239,16 +247,16 @@ async function handleBookingSubmit(e) {
 
         const result = await response.json();
         
-        if (response.ok) {
+        if (response.ok || result.success) {
             // Show confirmation modal
             showConfirmationModal();
         } else {
-            alert("Error: " + result.error);
+            alert("Error: " + (result.error || result.message || "Unknown error"));
         }
     } catch (err) {
         // Even if backend fails, show confirmation modal (request was made)
         console.error("Error:", err);
-        showConfirmationModal();
+        alert("Error submitting booking: " + err.message);
     }
 }
 
