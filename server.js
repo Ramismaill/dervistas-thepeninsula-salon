@@ -5,7 +5,6 @@ const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
-const __dirname = path.dirname(require.main.filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
