@@ -8,6 +8,8 @@ node_modules/
 # If you want to backup the database to GitHub, remove this line.
 # If you want it to remain local-only (recommended for real apps), keep it ignored.
 database.sqlite
+database.sqlite-shm
+database.sqlite-wal
 
 # OS generated files
 Thumbs.db
