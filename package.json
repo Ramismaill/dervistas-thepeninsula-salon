@@ -2,6 +2,7 @@
     "name": "peninsula-salon",
     "version": "1.0.0",
     "description": "Peninsula Hair Salon Website",
+    "type": "commonjs",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
