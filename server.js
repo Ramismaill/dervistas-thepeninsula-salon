@@ -34,18 +34,25 @@ console.log('SQLite veritabanına başarıyla bağlandı.');
 // ======================================
 // 2. EMAIL CONFIGURATION (Gmail)
 // ======================================
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+const emailConfigured = process.env.EMAIL_USER && process.env.EMAIL_PASS;
+
+if (!emailConfigured) {
     console.warn('⚠️  WARNING: EMAIL_USER or EMAIL_PASS not set. Email notifications will not work.');
     console.warn('Set these environment variables on Render dashboard to enable email functionality.');
 }
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+let transporter = null;
+if (emailConfigured) {
+    transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        },
+        connectionTimeout: 10000,
+        socketTimeout: 10000
+    });
+}
 
 // ======================================
 // 3. MIDDLEWARE
@@ -173,41 +180,48 @@ app.post('/api/book', async (req, res) => {
         const result = insertStmt.run(guest_type, full_name, email, room_number, phone_number, appointment_date, appointment_time, services, total_price_euro);
         const appointmentId = result.lastInsertRowid;
 
-        // Get the protocol and host from the request for confirm link
-        const protocol = req.protocol || 'https';
-        const host = req.get('host') || 'localhost:3000';
-        const confirmLink = `${protocol}://${host}/api/admin/confirm-appointment?id=${appointmentId}`;
+        console.log(`✅ Appointment saved to database: ID ${appointmentId} for ${full_name}`);
 
-        // 2. Send Email to Salon Owner
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: 'ramismail701@gmail.com',
-            subject: `NEW BOOKING: ${full_name}`,
-            html: `
-                <h3>New Appointment Request</h3>
-                <p><strong>Name:</strong> ${full_name}</p>
-                <p><strong>Email:</strong> ${email}</p>
-                <p><strong>Date:</strong> ${appointment_date} @ ${appointment_time}</p>
-                <p><strong>Services:</strong> ${services}</p>
-                <p><strong>Total:</strong> €${total_price_euro}</p>
-                <p><strong>Contact:</strong> ${room_number ? 'Room ' + room_number : 'Phone: ' + phone_number}</p>
-                <br>
-                <a href="${confirmLink}" style="background:green; color:white; padding:10px 20px; text-decoration:none; border-radius: 5px;">ACCEPT & CONFIRM</a>
-            `
-        };
+        // 2. Try to send email if configured
+        if (emailConfigured && transporter) {
+            // Get the protocol and host from the request for confirm link
+            const protocol = req.protocol || 'https';
+            const host = req.get('host') || 'localhost:3000';
+            const confirmLink = `${protocol}://${host}/api/admin/confirm-appointment?id=${appointmentId}`;
 
-        try {
-            await transporter.sendMail(mailOptions);
-            console.log(`Booking email sent to ramismail701@gmail.com for ${full_name}`);
-            return res.json({ success: true, message: 'Appointment request sent successfully.' });
-        } catch (emailErr) {
-            console.error("Email Error:", emailErr);
-            // Still return success since booking was saved
-            return res.json({ success: true, message: 'Booking saved. Email notification failed.' });
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: 'ramismail701@gmail.com',
+                subject: `NEW BOOKING: ${full_name}`,
+                html: `
+                    <h3>New Appointment Request</h3>
+                    <p><strong>Name:</strong> ${full_name}</p>
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Date:</strong> ${appointment_date} @ ${appointment_time}</p>
+                    <p><strong>Services:</strong> ${services}</p>
+                    <p><strong>Total:</strong> €${total_price_euro}</p>
+                    <p><strong>Contact:</strong> ${room_number ? 'Room ' + room_number : 'Phone: ' + phone_number}</p>
+                    <br>
+                    <a href="${confirmLink}" style="background:green; color:white; padding:10px 20px; text-decoration:none; border-radius: 5px;">ACCEPT & CONFIRM</a>
+                `
+            };
+
+            try {
+                await transporter.sendMail(mailOptions);
+                console.log(`📧 Booking email sent to ramismail701@gmail.com for ${full_name}`);
+            } catch (emailErr) {
+                console.error("❌ Email sending failed (non-blocking):", emailErr.message);
+                // Don't fail the booking if email fails
+            }
+        } else {
+            console.log("⚠️  Email not configured, skipping email notification");
         }
 
+        // Always return success - booking is saved in database
+        return res.json({ success: true, message: 'Appointment request saved successfully.' });
+
     } catch (err) {
-        console.error("Booking Error:", err);
+        console.error("❌ Booking Error:", err);
         return res.status(500).json({ error: 'Database error: ' + err.message });
     }
 });
