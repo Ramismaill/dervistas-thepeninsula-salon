@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
+const __dirname = path.dirname(require.main.filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,7 +18,7 @@ const sessions = {};
 // ======================================
 // 1. DATABASE CONNECTION (SQLite)
 // ======================================
-const dbPath = path.join(process.cwd(), 'database.sqlite');
+const dbPath = path.join(__dirname, 'database.sqlite');
 
 // Initialize database if it doesn't exist
 if (!fs.existsSync(dbPath)) {
@@ -33,6 +34,11 @@ console.log('SQLite veritabanına başarıyla bağlandı.');
 // ======================================
 // 2. EMAIL CONFIGURATION (Gmail)
 // ======================================
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('⚠️  WARNING: EMAIL_USER or EMAIL_PASS not set. Email notifications will not work.');
+    console.warn('Set these environment variables on Render dashboard to enable email functionality.');
+}
+
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -44,13 +50,13 @@ const transporter = nodemailer.createTransport({
 // ======================================
 // 3. MIDDLEWARE
 // ======================================
-// Use process.cwd() to be safer on different hosting environments
-app.use(express.static(path.join(process.cwd(), 'public')));
+// Use __dirname for reliable path resolution on Render
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Explicitly serve subdirectories to ensure they are found
-app.use('/css', express.static(path.join(process.cwd(), 'public/css')));
-app.use('/js', express.static(path.join(process.cwd(), 'public/js')));
-app.use('/assets', express.static(path.join(process.cwd(), 'public/assets')));
+app.use('/css', express.static(path.join(__dirname, 'public/css')));
+app.use('/js', express.static(path.join(__dirname, 'public/js')));
+app.use('/assets', express.static(path.join(__dirname, 'public/assets')));
 app.use(express.json());
 
 // ======================================
@@ -300,6 +306,7 @@ app.delete('/api/admin/appointments/:id', checkAdminSession, (req, res) => {
 // ======================================
 // 5. START SERVER
 // ======================================
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running at http://0.0.0.0:${PORT}`);
+    console.log(`Available at https://dervisitas-thepeninssula-salon.onrender.com`);
 });

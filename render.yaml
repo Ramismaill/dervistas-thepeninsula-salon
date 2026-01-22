@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: dervisitas-salon
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: EMAIL_USER
+        scope: run
+      - key: EMAIL_PASS
+        scope: run
