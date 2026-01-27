@@ -98,7 +98,7 @@ const checkAdminSession = (req, res, next) => {
 // ROUTE: Admin Login
 app.post('/api/admin/login', (req, res) => {
     const { username, password } = req.body;
-    
+
     if (username === 'admin' && password === 'admin') {
         const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         sessions[sessionId] = { username, loggedInAt: new Date() };
@@ -306,7 +306,7 @@ app.put('/api/admin/appointments/:id', checkAdminSession, (req, res) => {
             WHERE id = ?
         `);
         updateStmt.run(full_name, email, phone_number, appointment_date, appointment_time, services, total_price_euro, status, id);
-        
+
         res.json({ success: true, message: 'Appointment updated successfully' });
     } catch (err) {
         console.error('Error updating appointment:', err);
@@ -321,7 +321,7 @@ app.delete('/api/admin/appointments/:id', checkAdminSession, (req, res) => {
     try {
         const deleteStmt = db.prepare(`DELETE FROM appointments WHERE id = ?`);
         deleteStmt.run(id);
-        
+
         res.json({ success: true, message: 'Appointment deleted successfully' });
     } catch (err) {
         console.error('Error deleting appointment:', err);
@@ -334,5 +334,5 @@ app.delete('/api/admin/appointments/:id', checkAdminSession, (req, res) => {
 // ======================================
 app.listen(PORT, 'localhost', () => {
     console.log(`Server running at http://localhost:${PORT}`);
-    console.log(`Available at https://dervisitas-thepeninssula-salon.onrender.com`);
+    console.log(`Available at https://dervistas-thepeninssula-salon.onrender.com`);
 });
